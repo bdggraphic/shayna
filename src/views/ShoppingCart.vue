@@ -34,27 +34,15 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
+                                        <tr v-for="cart in cartUser" :key="cart.id">
                                             <td class="cart-pic first-row">
-                                                <img src="img/cart-page/product-1.jpg" />
+                                                <img :src="cart.photos" />
                                             </td>
                                             <td class="cart-title first-row text-center">
-                                                <h5>Pure Pineapple</h5>
+                                                <h5>{{ cart.name }}</h5>
                                             </td>
-                                            <td class="p-price first-row">$60.00</td>
-                                            <td class="delete-item"><a href="#"><i class="material-icons">
-                                              close
-                                              </i></a></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="cart-pic first-row">
-                                                <img src="img/cart-page/product-1.jpg" />
-                                            </td>
-                                            <td class="cart-title first-row text-center">
-                                                <h5>Pure Pineapple</h5>
-                                            </td>
-                                            <td class="p-price first-row">$60.00</td>
-                                            <td class="delete-item"><a href="#"><i class="material-icons">
+                                            <td class="p-price first-row">Rp. {{ cart.price }} </td>
+                                            <td class="delete-item"><a @click="removeItem(cart.id)" href="#"><i class="material-icons">
                                               close
                                               </i></a></td>
                                         </tr>
@@ -70,19 +58,25 @@
                                 <form>
                                     <div class="form-group">
                                         <label for="namaLengkap">Nama lengkap</label>
-                                        <input type="text" class="form-control" id="namaLengkap" aria-describedby="namaHelp" placeholder="Masukan Nama">
+                                        <input 
+                                            v-model="customerInfo.name"
+                                            type="text" class="form-control" id="namaLengkap" aria-describedby="namaHelp" placeholder="Masukan Nama">
                                     </div>
                                     <div class="form-group">
                                         <label for="namaLengkap">Email Address</label>
-                                        <input type="email" class="form-control" id="emailAddress" aria-describedby="emailHelp" placeholder="Masukan Email">
+                                        <input 
+                                            v-model="customerInfo.email"
+                                            type="email" class="form-control" id="emailAddress" aria-describedby="emailHelp" placeholder="Masukan Email">
                                     </div>
                                     <div class="form-group">
                                         <label for="namaLengkap">No. HP</label>
-                                        <input type="text" class="form-control" id="noHP" aria-describedby="noHPHelp" placeholder="Masukan No. HP">
+                                        <input 
+                                            v-model="customerInfo.phone"
+                                            type="text" class="form-control" id="noHP" aria-describedby="noHPHelp" placeholder="Masukan No. HP">
                                     </div>
                                     <div class="form-group">
                                         <label for="alamatLengkap">Alamat Lengkap</label>
-                                        <textarea class="form-control" id="alamatLengkap" rows="3"></textarea>
+                                        <textarea class="form-control" id="alamatLengkap" rows="3" v-model="customerInfo.address"></textarea>
                                     </div>
                                 </form>
                             </div>
@@ -95,14 +89,17 @@
                             <div class="proceed-checkout text-left">
                                 <ul>
                                     <li class="subtotal">ID Transaction <span>#SH12000</span></li>
-                                    <li class="subtotal mt-3">Subtotal <span>$240.00</span></li>
-                                    <li class="subtotal mt-3">Pajak <span>10%</span></li>
-                                    <li class="subtotal mt-3">Total Biaya <span>$440.00</span></li>
+                                    <li class="subtotal mt-3">Subtotal <span>Rp. {{ totalPrice }} </span></li>
+                                    <li class="subtotal mt-3">Pajak <span>10% ({{ pajak }})</span></li>
+                                    <li class="subtotal mt-3">Total Biaya <span>Rp. {{ grandTotal }}</span></li>
                                     <li class="subtotal mt-3">Bank Transfer <span>Mandiri</span></li>
                                     <li class="subtotal mt-3">No. Rekening <span>2208 1996 1403</span></li>
                                     <li class="subtotal mt-3">Nama Penerima <span>Shayna</span></li>
                                 </ul>
-                                <router-link to="/Success" class="proceed-btn">I ALREADY PAID</router-link>
+                                <router-link to="/Success" class="proceed-btn">
+                                    <a href="#" @click="checkout()" >I ALREADY PAID</a>
+                                </router-link>
+                                
                             </div>
                         </div>
                     </div>
@@ -118,12 +115,80 @@
 <script>
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
+import axios from 'axios'
 
 export default {
     name:'ShoppingCart',
     components: {
         Header,
         Footer
+    },
+    data() {
+        return{
+            cartUser: [],
+            customerInfo: {}
+        }
+    },
+    methods:{
+        removeItem(idProduct){
+            //breakdown item di local storage menggunakan fungsi map()
+            let cartUserStorage = JSON.parse(localStorage.getItem('cartUser'));
+            let itemStorage = cartUserStorage.map(itemStorage => itemStorage.id);
+            
+            //cari idproduct yg sama menggunakan fungsi findIndex()
+            let index = itemStorage.findIndex(id => id == idProduct);
+            //hapus data local storage menggunakan fungsi splice()
+            this.cartUser.splice(index,1);
+
+            const parsed = JSON.stringify(this.cartUser);
+            localStorage.setItem('cartUser', parsed);            
+            window.location.reload();
+        },
+        //fungsi mengirim data ke API
+        checkout(){
+            let productsID = this.cartUser.map(function(product){
+                return product.id
+            });
+
+            let checkoutData = {
+                'name': this.customerInfo.name,
+                'email': this.customerInfo.email,
+                'phone': this.customerInfo.phone,
+                'address': this.customerInfo.address,
+                'transaction_total': this.grandTotal,
+                'transaction_status': 'PENDING',
+                'transaction_details': productsID
+            }
+
+            axios
+            .post('http://127.0.0.1:8000/api/checkout', checkoutData)
+            .catch(err => {
+                console.log(err);
+            });
+
+        }
+    },
+    mounted(){
+        if (localStorage.getItem('cartUser')) {
+        try {
+            this.cartUser = JSON.parse(localStorage.getItem('cartUser'));
+        } catch(e) {
+            localStorage.removeItem('cartUser');
+        }
+        }
+    },
+    computed:{
+        totalPrice(){
+            return this.cartUser.reduce(function(items, data){
+                return items + data.price;
+            }, 0);
+        },
+        pajak(){
+            return (this.totalPrice * 10) / 100;  
+        },
+        grandTotal(){
+            return this.pajak + this.totalPrice;
+        }
     }
 }
 </script>
