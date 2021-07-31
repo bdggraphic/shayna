@@ -25,7 +25,7 @@
                     <div class="footer-widget text-left">
                         <h5>Information</h5>
                         <ul>
-                            <li><a href="#">About Us</a></li>
+                            <router-link class="link" to="/about">About Us</router-link>
                             <li><a href="#">Checkout</a></li>
                             <li><a href="#">Contact</a></li>
                             <li><a href="#">Serivius</a></li>
@@ -67,3 +67,12 @@ export default {
     name:'Footer'
 }
 </script>
+
+<style scoped>
+.link{
+    color: white;
+}
+.link:hover{
+    color:#e7ab3c;
+}
+</style>
